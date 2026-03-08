@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>I'm Sorry — For You</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Lato', sans-serif;
+  background: #0d1117;
+  color: #e8ddd0;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+#rainCanvas {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+
+.bg-scene {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%,   #1a2535 0%, transparent 70%),
+    radial-gradient(ellipse 60%  80% at 20% 100%,  #1e1428 0%, transparent 65%),
+    radial-gradient(ellipse 70%  50% at 80% 100%,  #141e2a 0%, transparent 60%),
+    linear-gradient(180deg, #0d1117 0%, #111827 40%, #0f1720 100%);
+}
+
+.window-glow {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; height: 45%;
+  background: radial-gradient(ellipse 80% 60% at 50% 110%,
+    rgba(180,140,100,0.07) 0%, rgba(120,100,160,0.04) 40%, transparent 70%);
+  z-index: 0; pointer-events: none;
+}
+
+.lightning {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  animation: lightningFlash 14s ease infinite;
+}
+@keyframes lightningFlash {
+  0%,93%,97%,100% { opacity:0; background:transparent; }
+  94% { opacity:1; background:rgba(220,230,255,0.06); }
+  95% { opacity:0; }
+  96% { opacity:1; background:rgba(220,230,255,0.04); }
+}
+
+.fog {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: rgba(13,17,23,0.18); backdrop-filter: blur(0.4px);
+}
+
+.puddles {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, transparent 0%, rgba(150,180,220,0.08) 20%,
+    rgba(150,180,220,0.14) 50%, rgba(150,180,220,0.08) 80%, transparent 100%);
+  z-index: 1;
+}
+
+.content { position: relative; z-index: 10; }
+
+/* ══ HERO ══ */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 60px 24px; position: relative;
+}
+
+.petal {
+  position: fixed; font-size: 18px; opacity: 0; z-index: 3;
+  pointer-events: none; animation: petalFall linear forwards;
+}
+@keyframes petalFall {
+  0%   { opacity:0; transform:translateY(-40px) rotate(0deg); }
+  10%  { opacity:0.5; }
+  90%  { opacity:0.3; }
+  100% { opacity:0; transform:translateY(100vh) rotate(360deg); }
+}
+
+.hero-pre {
+  font-size: 11px; letter-spacing: 5px; text-transform: uppercase;
+  color: rgba(200,160,140,0.6); margin-bottom: 28px;
+  animation: fadeUp 1s ease 0.3s both;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(64px, 13vw, 148px);
+  font-weight: 400; font-style: italic; line-height: 0.9;
+  letter-spacing: -3px; color: #e8ddd0; margin-bottom: 32px;
+  animation: fadeUp 1.2s ease 0.5s both;
+  text-shadow: 0 0 80px rgba(200,160,140,0.15), 0 2px 40px rgba(0,0,0,0.6);
+}
+.hero-title span {
+  display: block; font-style: normal; font-weight: 700;
+  font-size: 0.42em; letter-spacing: 10px;
+  color: rgba(200,170,150,0.55); text-transform: uppercase; margin-top: 14px;
+}
+.hero-heart {
+  font-size: 28px; display: inline-block; margin-bottom: 28px;
+  animation: heartbeat 2.4s ease infinite, fadeUp 1s ease 1s both;
+}
+@keyframes heartbeat {
+  0%,100% { transform:scale(1); }
+  14% { transform:scale(1.18); }
+  28% { transform:scale(1); }
+  42% { transform:scale(1.1); }
+  56% { transform:scale(1); }
+}
+.hero-message {
+  font-size: clamp(15px,2vw,18px); font-weight: 300; line-height: 1.95;
+  color: rgba(220,205,190,0.7); max-width: 540px; margin: 0 auto 48px;
+  animation: fadeUp 1s ease 1.1s both;
+}
+.hero-message em { color: #c8a08c; font-style: italic; }
+
+.scroll-cue {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  animation: fadeUp 1s ease 1.6s both;
+  color: rgba(200,170,150,0.4); font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+}
+.scroll-drop {
+  width: 1px; height: 56px;
+  background: linear-gradient(to bottom, rgba(200,160,140,0.4), transparent);
+  animation: drip 2s ease infinite;
+}
+@keyframes drip {
+  0%,100% { transform:scaleY(1) translateY(0); opacity:0.4; }
+  50%     { transform:scaleY(1.3) translateY(8px); opacity:0.8; }
+}
+
+/* ══ DIVIDER ══ */
+.divider {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; padding: 0 40px;
+}
+.divider-line { flex:1; height:1px; background:rgba(200,160,140,0.15); }
+.divider em {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 14px; color: rgba(200,160,140,0.4); letter-spacing: 2px;
+}
+
+/* ══ LABELS ══ */
+.labels-section { padding: 80px 32px 100px; max-width: 1100px; margin: 0 auto; }
+.section-head { text-align: center; margin-bottom: 72px; }
+.section-kicker {
+  font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+  color: rgba(180,140,120,0.5); margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(30px,5vw,50px); font-weight: 400; font-style: italic;
+  color: #e0d0c0; line-height: 1.2;
+}
+.section-title strong { font-weight: 700; font-style: normal; color: #c8a08c; }
+
+.cards-mosaic {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+}
+
+/* BASE CARD */
+.sorry-card {
+  border-radius: 3px; padding: 36px 30px 28px;
+  position: relative; overflow: hidden;
+  transition: transform 0.5s cubic-bezier(.4,0,.2,1), box-shadow 0.5s ease;
+  animation: cardRise 0.8s ease both;
+}
+.sorry-card:hover { transform: translateY(-6px); z-index: 5; }
+
+.sorry-card::before {
+  content:''; position:absolute; top:0; right:20px; width:1px; height:100%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(180,210,240,0.08) 40%,
+    rgba(180,210,240,0.15) 60%, transparent 100%);
+  animation: rainStreak 3s ease infinite; pointer-events:none;
+}
+.sorry-card::after {
+  content:''; position:absolute; top:0; right:40px; width:1px; height:100%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(180,210,240,0.06) 50%, transparent 100%);
+  animation: rainStreak 4.5s ease 1.2s infinite; pointer-events:none;
+}
+@keyframes rainStreak {
+  0%   { transform:translateY(-100%); opacity:0; }
+  20%  { opacity:1; } 80% { opacity:1; }
+  100% { transform:translateY(200%); opacity:0; }
+}
+@keyframes cardRise {
+  from { opacity:0; transform:translateY(40px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* themes */
+.card-dew    { background:linear-gradient(145deg,#141e2c,#1a2535); border:1px solid rgba(120,160,200,0.12); box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(180,210,240,0.06); }
+.card-rose   { background:linear-gradient(145deg,#1e1520,#261828); border:1px solid rgba(200,120,140,0.12); box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(200,140,160,0.06); }
+.card-amber  { background:linear-gradient(145deg,#1c1a10,#221e12); border:1px solid rgba(200,170,100,0.12); box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(220,190,120,0.06); }
+.card-violet { background:linear-gradient(145deg,#181420,#201828); border:1px solid rgba(160,120,200,0.12); box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(180,140,220,0.06); }
+.card-storm  { background:linear-gradient(145deg,#131820,#1a2030); border:1px solid rgba(100,130,180,0.14); box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(120,160,220,0.07); grid-column:span 2; }
+
+.card-dew:hover    { box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(120,160,200,0.2); }
+.card-rose:hover   { box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(200,120,140,0.2); }
+.card-amber:hover  { box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(200,170,100,0.22); }
+.card-violet:hover { box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(160,120,200,0.22); }
+.card-storm:hover  { box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(100,130,180,0.25); }
+
+.card-icon { font-size:32px; margin-bottom:20px; display:block; filter:drop-shadow(0 0 12px rgba(200,160,140,0.3)); }
+.card-label { font-size:9px; letter-spacing:4px; text-transform:uppercase; margin-bottom:12px; font-weight:400; }
+.card-dew    .card-label { color:rgba(120,180,220,0.6); }
+.card-rose   .card-label { color:rgba(220,130,150,0.6); }
+.card-amber  .card-label { color:rgba(220,180,100,0.6); }
+.card-violet .card-label { color:rgba(180,140,220,0.6); }
+.card-storm  .card-label { color:rgba(140,170,220,0.6); }
+
+.card-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:#e0d0c0; margin-bottom:14px; line-height:1.2; }
+.card-storm .card-title { font-size:30px; }
+.card-body { font-size:14px; font-weight:300; line-height:1.85; color:rgba(210,195,180,0.65); margin-bottom:24px; }
+.card-body em { color:rgba(210,195,180,0.9); font-style:italic; }
+
+/* ══ MUSIC BUTTON ══ */
+.music-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px; padding: 11px 22px;
+  font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(220,200,180,0.7); cursor: pointer;
+  transition: all 0.35s ease;
+  font-family: 'Lato', sans-serif; position: relative; z-index: 10;
+  user-select: none;
+}
+.music-btn:hover {
+  background: rgba(200,140,120,0.15);
+  border-color: rgba(200,140,120,0.4);
+  color: #e0d0c0; transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+}
+.music-btn .btn-icon { font-size:16px; transition:transform 0.3s; }
+.music-btn:hover .btn-icon { transform:scale(1.2) rotate(-8deg); }
+
+/* playing state */
+.music-btn.playing {
+  background: rgba(200,140,120,0.2);
+  border-color: rgba(200,140,120,0.55);
+  color: #e8d5c8;
+  animation: pulseRing 2s ease infinite;
+}
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(200,140,120,0.45); }
+  70%  { box-shadow: 0 0 0 10px rgba(200,140,120,0); }
+  100% { box-shadow: 0 0 0 0 rgba(200,140,120,0); }
+}
+
+/* sound wave bars */
+.sound-wave { display:none; align-items:flex-end; gap:3px; height:14px; }
+.music-btn.playing .sound-wave { display:flex; }
+.music-btn.playing .btn-play-text { display:none; }
+.music-btn:not(.playing) .btn-stop-text { display:none; }
+
+.sound-wave span {
+  width:3px; background:#c8a08c; border-radius:2px;
+  animation: waveBar 0.8s ease infinite;
+}
+.sound-wave span:nth-child(1) { height:5px;  animation-delay:0s; }
+.sound-wave span:nth-child(2) { height:12px; animation-delay:0.15s; }
+.sound-wave span:nth-child(3) { height:7px;  animation-delay:0.3s; }
+.sound-wave span:nth-child(4) { height:13px; animation-delay:0.1s; }
+.sound-wave span:nth-child(5) { height:5px;  animation-delay:0.25s; }
+@keyframes waveBar {
+  0%,100% { transform:scaleY(0.5); }
+  50%     { transform:scaleY(1.2); }
+}
+
+/* ══ SPOTIFY PANEL ══ */
+.spotify-panel {
+  max-height: 0; overflow: hidden; opacity: 0; margin-top: 0;
+  transition: max-height 0.65s cubic-bezier(.4,0,.2,1),
+              opacity 0.5s ease,
+              margin-top 0.4s ease;
+  position: relative; z-index: 10;
+}
+.spotify-panel.open {
+  max-height: 165px; opacity: 1; margin-top: 20px;
+}
+.spotify-panel iframe {
+  border-radius: 14px; width:100%; height:152px;
+  border:none; display:block;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* ══ LETTER ══ */
+.letter-section { padding:80px 32px 100px; max-width:680px; margin:0 auto; text-align:center; }
+.letter-wrap {
+  background:rgba(20,26,36,0.7); border:1px solid rgba(200,160,140,0.12);
+  border-radius:2px; padding:56px 52px; position:relative;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5); backdrop-filter:blur(8px);
+}
+.letter-seal {
+  position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+  width:44px; height:44px;
+  background:radial-gradient(circle,#c8604a 0%,#9e3a2a 100%);
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:18px; box-shadow:0 4px 16px rgba(200,80,60,0.35);
+}
+.letter-date { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:rgba(200,160,130,0.4); margin-bottom:32px; }
+.letter-body { font-family:'Playfair Display',serif; font-size:17px; font-weight:400; line-height:2.1; color:rgba(228,215,200,0.82); text-align:left; }
+.letter-body p { margin-bottom:20px; }
+.letter-body em { color:#c8a08c; font-style:italic; }
+.letter-body strong { color:#e0d0c0; font-weight:700; }
+.letter-sign { margin-top:36px; text-align:right; font-family:'Playfair Display',serif; font-style:italic; font-size:20px; color:rgba(200,160,140,0.7); }
+
+/* ══ PROMISES ══ */
+.promise-strip { padding:80px 32px; text-align:center; background:linear-gradient(180deg,transparent 0%,rgba(20,15,30,0.5) 50%,transparent 100%); }
+.promise-title { font-family:'Playfair Display',serif; font-size:clamp(22px,4vw,38px); font-style:italic; color:rgba(230,215,200,0.8); margin-bottom:52px; letter-spacing:-0.5px; }
+.promises { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; max-width:700px; margin:0 auto; }
+.promise-pill {
+  background:rgba(25,32,44,0.8); border:1px solid rgba(200,160,140,0.14);
+  border-radius:100px; padding:10px 22px; font-size:13px; font-weight:300;
+  color:rgba(210,195,178,0.7); backdrop-filter:blur(6px);
+  transition:all 0.3s ease; animation:pillFloat 4s ease infinite;
+}
+.promise-pill:nth-child(even) { animation-delay:2s; }
+.promise-pill:hover { background:rgba(200,140,120,0.1); border-color:rgba(200,140,120,0.3); color:#e0d0c0; transform:translateY(-3px); }
+@keyframes pillFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+
+/* ══ FINAL ══ */
+.final-section { padding:80px 32px 120px; text-align:center; }
+.candle { font-size:48px; display:inline-block; animation:candleFlicker 2.5s ease infinite; filter:drop-shadow(0 0 20px rgba(240,180,100,0.5)); }
+@keyframes candleFlicker {
+  0%,100% { transform:scale(1) rotate(-1deg); filter:drop-shadow(0 0 20px rgba(240,180,100,0.5)); }
+  25%     { transform:scale(1.04) rotate(1deg); filter:drop-shadow(0 0 28px rgba(240,180,100,0.7)); }
+  50%     { transform:scale(0.97) rotate(-0.5deg); filter:drop-shadow(0 0 16px rgba(240,160,80,0.4)); }
+  75%     { transform:scale(1.02) rotate(1.5deg); filter:drop-shadow(0 0 24px rgba(240,180,100,0.6)); }
+}
+.final-text { font-family:'Playfair Display',serif; font-size:clamp(28px,5vw,52px); font-style:italic; font-weight:400; color:rgba(230,215,200,0.85); margin-top:28px; line-height:1.3; letter-spacing:-1px; }
+.final-sub { font-size:14px; font-weight:300; color:rgba(200,180,160,0.45); margin-top:18px; letter-spacing:1.5px; }
+
+/* ══ SHARED ══ */
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+.reveal { opacity:0; transform:translateY(36px); transition:opacity 0.9s ease, transform 0.9s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+@media (max-width:800px) { .cards-mosaic{grid-template-columns:1fr 1fr;} .card-storm{grid-column:span 2;} }
+@media (max-width:540px) { .cards-mosaic{grid-template-columns:1fr;} .card-storm{grid-column:span 1;} .letter-wrap{padding:48px 28px;} }
+</style>
+</head>
+<body>
+
+<div class="bg-scene"></div>
+<div class="window-glow"></div>
+<div class="lightning"></div>
+<div class="fog"></div>
+<canvas id="rainCanvas"></canvas>
+<div class="puddles"></div>
+<div id="petals"></div>
+
+<div class="content">
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="hero-pre">A message for Angry Anisha </p>
+    <h1 class="hero-title">
+      I Dumb Sachin , I'm Sorry
+      <span>With all my heart</span>
+    </h1>
+    <div class="hero-heart">🌹</div>
+    <p class="hero-message">
+      Some words are too heavy to say out loud,<br>
+      so I built this — just for you —<br>
+      in the quiet of a rainy night,<br>
+      hoping <em>you can feel what I mean.</em>
+    </p>
+    <div class="scroll-cue">
+      <div class="scroll-drop"></div>
+      Read on
+    </div>
+  </section>
+
+  <!-- SORRY LABELS -->
+  <section class="labels-section">
+
+    <div class="divider reveal">
+      <div class="divider-line"></div>
+      <em>what sorry means</em>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="section-head reveal" style="margin-top:56px">
+      <div class="section-kicker">Every shade of sorry</div>
+      <h2 class="section-title">The things I carry,<br><strong>labeled honestly</strong></h2>
+    </div>
+
+    <div class="cards-mosaic">
+
+      <!-- 1 · REGRET -->
+      <div class="sorry-card card-dew reveal" style="animation-delay:0.05s">
+        <span class="card-icon">🌧️</span>
+        <div class="card-label">Label 01 — Regret</div>
+        <div class="card-title">I Wish I Could Undo It</div>
+        <div class="card-body">Not because I'm afraid of what happened, but because I never wanted <em>you to feel even a moment of pain.</em> That matters more than anything else to me.</div>
+        <button class="music-btn" onclick="toggleMusic(this,'player-1')">
+          <span class="btn-icon">🎵</span>
+          <span class="btn-play-text">Play this feeling</span>
+          <span class="btn-stop-text">Now playing</span>
+          <span class="sound-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        </button>
+        <div class="spotify-panel" id="player-1">
+          <iframe src="https://open.spotify.com/embed/track/09CtPGIpYB4BrO8qb1RGsF?utm_source=generator&theme=0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <!-- 2 · TENDERNESS -->
+      <div class="sorry-card card-rose reveal" style="animation-delay:0.1s">
+        <span class="card-icon">🌹</span>
+        <div class="card-label">Label 02 — Tenderness</div>
+        <div class="card-title">You Deserved Better</div>
+        <div class="card-body">You are someone who deserves to be handled with <em>absolute care.</em> I forgot that, even for a moment. And I'm sorry with every part of me.</div>
+        <button class="music-btn" onclick="toggleMusic(this,'player-2')">
+          <span class="btn-icon">🌹</span>
+          <span class="btn-play-text">Play this feeling</span>
+          <span class="btn-stop-text">Now playing</span>
+          <span class="sound-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        </button>
+        <div class="spotify-panel" id="player-2">
+          <iframe src="https://open.spotify.com/embed/track/0WBClBemYPJR44H6uIn0kp?utm_source=generator&theme=0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <!-- 3 · HONESTY -->
+      <div class="sorry-card card-amber reveal" style="animation-delay:0.15s">
+        <span class="card-icon">🕯️</span>
+        <div class="card-label">Label 03 — Honesty</div>
+        <div class="card-title">I Own This Completely</div>
+        <div class="card-body">No excuses. No deflection. Whatever hurt you — <em>I take responsibility for it,</em> fully, without reservation. You deserve that honesty.</div>
+        <button class="music-btn" onclick="toggleMusic(this,'player-3')">
+          <span class="btn-icon">🕯️</span>
+          <span class="btn-play-text">Play this feeling</span>
+          <span class="btn-stop-text">Now playing</span>
+          <span class="sound-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        </button>
+        <div class="spotify-panel" id="player-3">
+          <iframe src="https://open.spotify.com/embed/track/5Xe4kq8j3saW89CSNQGawF?utm_source=generator&theme=0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <!-- 4 · PROMISE -->
+      <div class="sorry-card card-violet reveal" style="animation-delay:0.2s">
+        <span class="card-icon">💜</span>
+        <div class="card-label">Label 04 — Promise</div>
+        <div class="card-title">I Will Do Better</div>
+        <div class="card-body">Sorry is just the beginning.   Main koshish karunga tujhe hurt na karu <em>Pareshan toh karunga</em> — But I promise I won`t disrespect you.</div>
+        <button class="music-btn" onclick="toggleMusic(this,'player-4')">
+          <span class="btn-icon">💜</span>
+          <span class="btn-play-text">Play this feeling</span>
+          <span class="btn-stop-text">Now playing</span>
+          <span class="sound-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        </button>
+        <div class="spotify-panel" id="player-4">
+          <iframe src="https://open.spotify.com/embed/track/412poAqbwD8OC0dYD1nBkV?utm_source=generator&theme=0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <!-- 5 · THE MOST IMPORTANT ONE (wide) -->
+      <div class="sorry-card card-storm reveal" style="animation-delay:0.25s">
+        <span class="card-icon">⚡</span>
+        <div class="card-label">Label 05 — The Most Important One</div>
+        <div class="card-title">I Value You More Than My Pride</div>
+        <div class="card-body">
+          It aches my heart toh have hurt you today — <em>Meri galati thi and I completely accept if you never want to talk.</em>
+          You matter more than my stubbornness,for my mistakes.<br><br>
+          I built this page in the rain, hoping the sound of it would carry these words to you
+          the way I mean them: <em>quietly, tenderly, completely.</em>
+        </div>
+        <button class="music-btn" onclick="toggleMusic(this,'player-5')">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-play-text">Play this feeling</span>
+          <span class="btn-stop-text">Now playing</span>
+          <span class="sound-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        </button>
+        <div class="spotify-panel" id="player-5">
+          <iframe src="https://open.spotify.com/embed/track/0cYohCh24y1aMjJmcS9RBl?utm_source=generator&theme=0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- LETTER -->
+  <section class="letter-section">
+    <div class="divider reveal">
+      <div class="divider-line"></div>
+      <em>a letter</em>
+      <div class="divider-line"></div>
+    </div>
+    <div class="letter-wrap reveal" style="margin-top:60px">
+      <div class="letter-seal">💌</div>
+      <div class="letter-date">Written on a rainy evening</div>
+      <div class="letter-body">
+        <p>To you, the one reading this —</p>
+        <p>I know <em>"sorry"</em> can feel like just a word. Small. Overused. Not enough. So I didn't just say it — I sat down and tried to build something that might make you <em>feel</em> it instead.</p>
+        <p>I thought about you while the rain fell. About the way you laugh when something genuinely catches you off guard. About how you deserve someone who never makes you question whether you matter.</p>
+        <p><strong>You matter. Endlessly.</strong></p>
+        <p>I'm sorry for the hurt. I'm sorry for the moment I wasn't what you needed. And I'm asking — not demanding — just gently asking — for the chance to be better.</p>
+        <p>If this rain could wash anything clean, I'd ask it to wash away whatever distance sits between us right now.</p>
+      </div>
+      <div class="letter-sign">— Yours, always 🌿</div>
+    </div>
+  </section>
+
+  <!-- PROMISES -->
+  <section class="promise-strip">
+    <p class="promise-title reveal">Little promises, whispered in the rain</p>
+    <div class="promises reveal">
+      <div class="promise-pill">🌧️ I'll listen more</div>
+      <div class="promise-pill">🌹 I'll be more gentle</div>
+      <div class="promise-pill">💌 I'll say it before it's too late</div>
+      <div class="promise-pill">🕯️ I'll show up</div>
+      <div class="promise-pill">✨ I'll be more patient</div>
+      <div class="promise-pill">🌿 I'll think before I speak</div>
+      <div class="promise-pill">💜 I'll remind you how special you are</div>
+      <div class="promise-pill">☔ I'll stand with you in every storm</div>
+      <div class="promise-pill">🌙 I'll never let pride come first</div>
+      <div class="promise-pill">🌸 I'll never make you feel small</div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="final-section">
+    <div class="candle reveal">🕯️</div>
+    <div class="final-text reveal" style="transition-delay:0.2s">
+      Forgive me<br>
+      <span style="font-size:0.65em;color:rgba(200,180,160,0.5);">when you're ready</span>
+    </div>
+    <p class="final-sub reveal" style="transition-delay:0.35s">Until then — I'll be here. Waiting. In the rain.</p>
+  </section>
+
+</div><!-- /content -->
+
+<script>
+/* ══ RAIN ══ */
+const canvas = document.getElementById('rainCanvas');
+const ctx = canvas.getContext('2d');
+let drops = [], W, H;
+
+function resizeCanvas() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); initDrops(); });
+
+function initDrops() {
+  drops = [];
+  for (let i = 0; i < Math.floor(W * 0.55); i++) drops.push(newDrop(true));
+}
+function newDrop(rand) {
+  const speed = 8 + Math.random() * 14;
+  return { x: Math.random()*W, y: rand ? Math.random()*H : -20,
+           len: 10+Math.random()*22, speed,
+           opacity: 0.04+Math.random()*0.13,
+           width: 0.5+Math.random()*0.8,
+           angle: 0.18+Math.random()*0.08 };
+}
+function drawRain() {
+  ctx.clearRect(0,0,W,H);
+  drops.forEach(d => {
+    ctx.beginPath();
+    ctx.moveTo(d.x, d.y);
+    ctx.lineTo(d.x + d.len*d.angle, d.y + d.len);
+    ctx.strokeStyle = `rgba(180,210,240,${d.opacity})`;
+    ctx.lineWidth = d.width; ctx.stroke();
+    d.y += d.speed; d.x += d.speed*d.angle*0.5;
+    if (d.y > H+30) Object.assign(d, newDrop(false));
+  });
+  requestAnimationFrame(drawRain);
+}
+initDrops(); drawRain();
+
+/* ══ MUSIC TOGGLE ══ */
+function toggleMusic(btn, panelId) {
+  const panel = document.getElementById(panelId);
+  const isOpen = panel.classList.contains('open');
+
+  // close all
+  document.querySelectorAll('.spotify-panel.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.music-btn.playing').forEach(b => b.classList.remove('playing'));
+
+  if (!isOpen) {
+    panel.classList.add('open');
+    btn.classList.add('playing');
+    setTimeout(() => {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 350);
+  }
+}
+
+/* ══ PETALS ══ */
+const petalEmojis = ['🌸','🌹','🌺','🌷'];
+const petalContainer = document.getElementById('petals');
+function spawnPetal() {
+  const el = document.createElement('div');
+  el.className = 'petal';
+  el.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
+  el.style.left = Math.random()*100 + 'vw';
+  el.style.fontSize = (14 + Math.random()*10) + 'px';
+  el.style.animationDuration = (9 + Math.random()*10) + 's';
+  el.style.animationDelay = (Math.random()*3) + 's';
+  petalContainer.appendChild(el);
+  setTimeout(() => el.remove(), 22000);
+}
+setInterval(spawnPetal, 1400);
+for (let i = 0; i < 5; i++) setTimeout(spawnPetal, i*500);
+
+/* ══ SCROLL REVEAL ══ */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
