@@ -1,2 +1,3 @@
 # casual_webpage
-Author-sachin
+A webpage I created on my friend's request
+Author - Sachin
